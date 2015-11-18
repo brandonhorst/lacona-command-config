@@ -1,11 +1,61 @@
 /** @jsx createElement */
-import {createElement, Source} from 'lacona-phrase'
+import _ from 'lodash'
+import {createElement, Source, Phrase} from 'lacona-phrase'
+import String from 'lacona-phrase-string'
 
-export default class ConfigSource extends Source {
+class SubscriptionSource extends Source {
   onCreate () {
-    const values = global.getConfigValues()
-    this.replaceData(values)
-    
-    global.subscribeToConfigChanges(this.replaceData.bind(this))
+    const {subscriptionId, value} = global.subscribeToChanges(this.constructor.eventName, this.change.bind(this))
+
+    this.replaceData(value[this.props.key])
+
+    this.subscriptionId = subscriptionId
   }
+
+  onDelete () {
+    global.removeChangeSubscription(this.constructor.eventName, this.subscriptionId)
+  }
+
+  change (newValues) {
+    if (!_.isEqual(newValues[this.props.key], this.data)) {
+      this.replaceData(newValues[this.props.key])
+    }
+  }
+}
+
+export class Config extends SubscriptionSource {}
+Config.eventName = 'config'
+
+export class Context extends SubscriptionSource {}
+Context.eventName = 'context'
+
+export class TextSelection extends Phrase {
+  source () {
+    return {
+      selection: <Context key='selection' />,
+      clipboard: <Context key='clipboard' />
+    }
+  }
+
+
+  describe () {
+    return (
+      <argument text={this.props.argument || 'string'}>
+        <choice>
+          {this.sources.selection.data ?
+            <literal text={this.sources.selection.data} value={this.sources.selection.data} truncate={true} />
+          : null }
+          {this.sources.clipboard.data ?
+            <literal text={this.sources.clipboard.data} value={this.sources.clipboard.data} truncate={true} />
+          : null }
+        </choice>
+      </argument>
+    )
+  }
+}
+
+TextSelection.extends = [String]
+
+export default  {
+  extensions: [TextSelection]
 }
