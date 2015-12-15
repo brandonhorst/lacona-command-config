@@ -5,15 +5,23 @@ import String from 'lacona-phrase-string'
 
 class SubscriptionSource extends Source {
   onCreate () {
-    const {subscriptionId, value} = global.subscribeToChanges(this.constructor.eventName, this.change.bind(this))
+    if (process && process.env && process.env.LACONA_ENV === 'demo') {
+      this.replaceData(global.config[this.props.key])
+    } else {
+      const {subscriptionId, value} = global.subscribeToChanges(this.constructor.eventName, this.change.bind(this))
 
-    this.replaceData(value[this.props.key])
+      this.replaceData(value[this.props.key])
 
-    this.subscriptionId = subscriptionId
+      this.subscriptionId = subscriptionId
+    }
   }
 
   onDelete () {
-    global.removeChangeSubscription(this.constructor.eventName, this.subscriptionId)
+    if (process && process.env && process.env.LACONA_ENV === 'demo') {
+
+    } else {
+      global.removeChangeSubscription(this.constructor.eventName, this.subscriptionId)
+    }
   }
 
   change (newValues) {
@@ -43,10 +51,10 @@ export class TextSelection extends Phrase {
       <argument text={this.props.argument || 'string'}>
         <choice>
           {this.sources.selection.data ?
-            <literal text={this.sources.selection.data} value={this.sources.selection.data} truncate={true} />
+            <literal text='this selection' value={this.sources.selection.data} truncate={true} category='symbol' />
           : null }
           {this.sources.clipboard.data ?
-            <literal text={this.sources.clipboard.data} value={this.sources.clipboard.data} truncate={true} />
+            <literal text='my clipboard' value={this.sources.clipboard.data} truncate={true} category='symbol' />
           : null }
         </choice>
       </argument>
